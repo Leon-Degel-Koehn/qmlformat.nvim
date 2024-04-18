@@ -5,6 +5,56 @@ local finders = require('telescope.finders')
 local pickers = require('telescope.pickers')
 local previewers = require('telescope.previewers')
 local plenary = require('plenary')
+local bufnr
+
+local function add_keymaps_to_buffer(curr_bufnr)
+	vim.api.nvim_buf_create_user_command(curr_bufnr, "W", function()
+		local curr_buff = vim.api.nvim_win_get_buf(0)
+		local diff = vim.api.nvim_buf_get_lines(curr_buff, 0, -1, true)
+		local filepath = vim.api.nvim_buf_get_name(bufnr)
+		local lines = M._apply_patch(diff, filepath)
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, lines)
+	end, {})
+end
+
+local function edit_diff(diff)
+	local diff_bufnr = vim.api.nvim_create_buf(false, true)
+	local width = 500
+	local height = 500
+	local row = (vim.api.nvim_win_get_height(0) - height) / 2
+	local col = (vim.api.nvim_win_get_width(0) - width) / 2
+	local title = "Edit formatting diff"
+	local current_window = vim.api.nvim_open_win(diff_bufnr, true, {
+		style = "minimal",
+		relative = "editor",
+		width = width,
+		height = height,
+		row = row,
+		col = col,
+		border = "single",
+		title = title
+	})
+	vim.wo[current_window].winhighlight = "Normal:Normal"
+	vim.api.nvim_buf_set_lines(diff_bufnr, 0, -1, true, diff)
+	add_keymaps_to_buffer(diff_bufnr)
+end
+
+M._apply_patch = function(diff, filename)
+	local patch_file = io.open(".qmlformat_patch", "w")
+	patch_file:write(table.concat(diff, "\n"))
+	patch_file:close()
+	local result
+	local job_opts = {
+		command = 'patch',
+		args = vim.tbl_flatten {'-o', '-', filename, ".qmlformat_patch"},
+		on_exit = function(j, _)
+			result = j:result()
+		end,
+	}
+	plenary.job:new(job_opts):sync()
+	os.remove(".qmlformat_formatted")
+	return result
+end
 
 local _get_qmlformat_results = function(filepath)
 	local original
@@ -13,7 +63,7 @@ local _get_qmlformat_results = function(filepath)
 	local job_opts = {
 		command = 'cat',
 		args = vim.tbl_flatten {filepath},
-		on_exit = function(j, return_val)
+		on_exit = function(j, _)
 			original = j:result()
 		end,
 	}
@@ -22,7 +72,7 @@ local _get_qmlformat_results = function(filepath)
 	job_opts = {
 		command = 'qmlformat',
 		args = vim.tbl_flatten {'--normalize', filepath},
-		on_exit = function(j, return_val)
+		on_exit = function(j, _)
 			formatted = j:result()
 		end,
 	}
@@ -44,7 +94,7 @@ local _get_qmlformat_results = function(filepath)
 			'.qmlformat_formatted',
 			'-u',
 		},
-		on_exit = function(j, return_val)
+		on_exit = function(j, _)
 			diff = j:result()
 			for linenum = 1, #diff do
 				local line = diff[linenum]
@@ -62,7 +112,7 @@ end
 
 M.preview_qmlformat_changes = function(opts)
 	local filepath = vim.api.nvim_buf_get_name(0)
-	local bufnr = vim.api.nvim_get_current_buf()
+	bufnr = vim.api.nvim_get_current_buf()
 	local preview_buffer
 	local original = nil
 	local formatted = nil
@@ -105,9 +155,9 @@ M.preview_qmlformat_changes = function(opts)
 					vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, content)
 					actions.close(prompt_bufnr)
 				end
-				-- TODO: define action for selection of the diff entry
-				-- one idea is to open a new window where the user can edit the diff
-				-- after finishing editing the user can choose to apply the diff to the file
+				if selection.value == "diff" then
+					edit_diff(content)
+				end
 			end)
 			return true
 		end,
