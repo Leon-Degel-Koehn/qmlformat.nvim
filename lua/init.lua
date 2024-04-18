@@ -1,5 +1,6 @@
 local M = {}
 local actions = require('telescope.actions')
+local actions_state = require('telescope.actions.state')
 local finders = require('telescope.finders')
 local pickers = require('telescope.pickers')
 local previewers = require('telescope.previewers')
@@ -55,6 +56,8 @@ end
 
 M.preview_qmlformat_changes = function(opts)
 	local filepath = vim.api.nvim_buf_get_name(0)
+	local bufnr = vim.api.nvim_get_current_buf()
+	local preview_buffer
 	pickers
 	.new(opts, {
 		finder = finders.new_table {
@@ -76,11 +79,21 @@ M.preview_qmlformat_changes = function(opts)
 			define_preview = function(self, entry)
 				local call = _get_qmlformat_results(filepath)
 				vim.api.nvim_buf_set_lines(self.state.bufnr, 0, 0, true, call[entry.index])
+				preview_buffer = self.state.bufnr
 			end
 		}),
 		attach_mappings = function(prompt_bufnr)
 			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
+				local selection = actions_state.get_selected_entry(prompt_bufnr)
+				-- TODO: check if it is possible to access the preview bufnr in a different way
+				local content = vim.api.nvim_buf_get_lines(preview_buffer, 0, -1, true)
+				if selection.value == "formatted" or selection.value == "original" then
+					vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, content)
+					actions.close(prompt_bufnr)
+				end
+				-- TODO: define action for selection of the diff entry
+				-- one idea is to open a new window where the user can edit the diff
+				-- after finishing editing the user can choose to apply the diff to the file
 			end)
 			return true
 		end,
