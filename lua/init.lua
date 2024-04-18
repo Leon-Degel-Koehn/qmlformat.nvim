@@ -46,6 +46,12 @@ local _get_qmlformat_results = function(filepath)
 		},
 		on_exit = function(j, return_val)
 			diff = j:result()
+			for linenum = 1, #diff do
+				local line = diff[linenum]
+				line = line:gsub(".qmlformat_original", filepath)
+				line = line:gsub(".qmlformat_formatted", filepath)
+				diff[linenum] = line
+			end
 		end,
 	}
 	plenary.job:new(job_opts):sync()
@@ -58,6 +64,9 @@ M.preview_qmlformat_changes = function(opts)
 	local filepath = vim.api.nvim_buf_get_name(0)
 	local bufnr = vim.api.nvim_get_current_buf()
 	local preview_buffer
+	local original = nil
+	local formatted = nil
+	local diff = nil
 	pickers
 	.new(opts, {
 		finder = finders.new_table {
@@ -77,7 +86,12 @@ M.preview_qmlformat_changes = function(opts)
 		},
 		previewer = previewers.new_buffer_previewer({
 			define_preview = function(self, entry)
-				local call = _get_qmlformat_results(filepath)
+				local call
+				if original == nil or formatted == nil or diff == nil then
+					call = _get_qmlformat_results(filepath)
+				else
+					call = {original, formatted, diff}
+				end
 				vim.api.nvim_buf_set_lines(self.state.bufnr, 0, 0, true, call[entry.index])
 				preview_buffer = self.state.bufnr
 			end
