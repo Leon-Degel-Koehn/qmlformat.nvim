@@ -1,4 +1,4 @@
-local M = {}
+local qmlformat = {}
 local actions = require('telescope.actions')
 local actions_state = require('telescope.actions.state')
 local finders = require('telescope.finders')
@@ -13,7 +13,7 @@ local function add_keymaps_to_buffer(curr_bufnr)
 		local curr_buff = vim.api.nvim_win_get_buf(0)
 		local diff = vim.api.nvim_buf_get_lines(curr_buff, 0, -1, true)
 		local filepath = vim.api.nvim_buf_get_name(bufnr)
-		local lines = M._apply_patch(diff, filepath)
+		local lines = qmlformat._apply_patch(diff, filepath)
 		vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, lines)
 	end, {})
 end
@@ -41,7 +41,7 @@ local function edit_diff(diff)
 	add_keymaps_to_buffer(diff_bufnr)
 end
 
-M._apply_patch = function(diff, filename)
+qmlformat._apply_patch = function(diff, filename)
 	local patch_file = io.open(".qmlformat_patch", "w")
 	patch_file:write(table.concat(diff, "\n"))
 	patch_file:close()
@@ -112,7 +112,7 @@ local _get_qmlformat_results = function(filepath)
 	return {original, formatted, diff}
 end
 
-M.preview_qmlformat_changes = function(opts)
+qmlformat.preview_qmlformat_changes = function(opts)
 	local filepath = vim.api.nvim_buf_get_name(0)
 	bufnr = vim.api.nvim_get_current_buf()
 	local preview_buffer
@@ -167,7 +167,6 @@ M.preview_qmlformat_changes = function(opts)
 	})
 	:find()
 end
-
-vim.keymap.set('n', '<leader>q', M.preview_qmlformat_changes, {})
-
-return M
+-- remove after debug
+vim.keymap.set('n', '<leader>q', qmlformat.preview_qmlformat_changes, {})
+return qmlformat
