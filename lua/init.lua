@@ -5,6 +5,7 @@ local finders = require('telescope.finders')
 local pickers = require('telescope.pickers')
 local previewers = require('telescope.previewers')
 local plenary = require('plenary')
+local utils = require('telescope.previewers.utils')
 local bufnr
 
 local function add_keymaps_to_buffer(curr_bufnr)
@@ -36,6 +37,7 @@ local function edit_diff(diff)
 	})
 	vim.wo[current_window].winhighlight = "Normal:Normal"
 	vim.api.nvim_buf_set_lines(diff_bufnr, 0, -1, true, diff)
+	utils.highlighter(diff_bufnr, 'qml')
 	add_keymaps_to_buffer(diff_bufnr)
 end
 
@@ -144,6 +146,7 @@ M.preview_qmlformat_changes = function(opts)
 				end
 				vim.api.nvim_buf_set_lines(self.state.bufnr, 0, 0, true, call[entry.index])
 				preview_buffer = self.state.bufnr
+				utils.highlighter(self.state.bufnr, 'qml')
 			end
 		}),
 		attach_mappings = function(prompt_bufnr)
