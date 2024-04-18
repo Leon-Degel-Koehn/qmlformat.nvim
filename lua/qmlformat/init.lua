@@ -119,6 +119,9 @@ qmlformat.preview_qmlformat_changes = function(opts)
 	local original = nil
 	local formatted = nil
 	local diff = nil
+	if (vim.bo.filetype ~= 'qml') then
+		return
+	end
 	pickers
 	.new(opts, {
 		finder = finders.new_table {
@@ -167,6 +170,4 @@ qmlformat.preview_qmlformat_changes = function(opts)
 	})
 	:find()
 end
--- remove after debug
-vim.keymap.set('n', '<leader>q', qmlformat.preview_qmlformat_changes, {})
 return qmlformat
