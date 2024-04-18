@@ -55,37 +55,37 @@ end
 
 M.preview_qmlformat_changes = function(opts)
 	local filepath = vim.api.nvim_buf_get_name(0)
-	 pickers
-	 .new(opts, {
-		 finder = finders.new_table {
-			 results = {
-				 'original',
-				 'formatted',
-				 'diff'
-			 },
-			 entry_maker = function(entry)
-				 -- TODO: check what we really need here, works for now
-				 return {
-					 value = entry,
-					 display = entry,
-					 ordinal = entry,
-				 }
-			 end
-		 },
-		 previewer = previewers.new_buffer_previewer({
-			 define_preview = function(self, entry)
-				 local call = _get_qmlformat_results(filepath)
-				 vim.api.nvim_buf_set_lines(self.state.bufnr, 0, 0, true, call[entry.index])
-			 end
-		 }),
-		 attach_mappings = function(prompt_bufnr)
-			 actions.select_default:replace(function()
-				 actions.close(prompt_bufnr)
-			 end)
-			 return true
-		 end,
-	 })
-	 :find()
+	pickers
+	.new(opts, {
+		finder = finders.new_table {
+			results = {
+				'original',
+				'formatted',
+				'diff'
+			},
+			entry_maker = function(entry)
+				-- TODO: check what we really need here, works for now
+				return {
+					value = entry,
+					display = entry,
+					ordinal = entry,
+				}
+			end
+		},
+		previewer = previewers.new_buffer_previewer({
+			define_preview = function(self, entry)
+				local call = _get_qmlformat_results(filepath)
+				vim.api.nvim_buf_set_lines(self.state.bufnr, 0, 0, true, call[entry.index])
+			end
+		}),
+		attach_mappings = function(prompt_bufnr)
+			actions.select_default:replace(function()
+				actions.close(prompt_bufnr)
+			end)
+			return true
+		end,
+	})
+	:find()
 end
 
 vim.keymap.set('n', '<leader>q', M.preview_qmlformat_changes, {})
