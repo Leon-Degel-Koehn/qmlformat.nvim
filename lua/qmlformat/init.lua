@@ -54,7 +54,7 @@ qmlformat._apply_patch = function(diff, filename)
 		end,
 	}
 	plenary.job:new(job_opts):sync()
-	os.remove(".qmlformat_formatted")
+	os.remove(".qmlformat_patch")
 	return result
 end
 
